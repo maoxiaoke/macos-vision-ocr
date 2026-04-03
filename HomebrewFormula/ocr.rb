@@ -1,16 +1,16 @@
 class Ocr < Formula
   desc "Command-line OCR tool built with Apple's Vision framework"
   homepage "https://github.com/maoxiaoke/macos-vision-ocr"
-  version "1.1.0"
+  version "1.2.0"
   license "MIT"
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://github.com/maoxiaoke/macos-vision-ocr/releases/download/v1.1.0/ocr-macos-arm64-v1.1.0.zip"
-      sha256 "b23b15b19b547e27a7fc14170e60264c7e7ee05f564c981528f53bfa7854b504"
+      url "https://github.com/maoxiaoke/macos-vision-ocr/releases/download/v1.2.0/ocr-macos-arm64-v1.2.0.zip"
+      sha256 "c0ed60d458639e2a9ea951ac2f8973acdd455a94c29fb021de6cc095daf13601"
     else
-      url "https://github.com/maoxiaoke/macos-vision-ocr/releases/download/v1.1.0/ocr-macos-x86_64-v1.1.0.zip"
-      sha256 "22d6e6b61b98bf2c476e39eac28acfac541ad5b4cda7a82a3854626abbf2245f"
+      url "https://github.com/maoxiaoke/macos-vision-ocr/releases/download/v1.2.0/ocr-macos-x86_64-v1.2.0.zip"
+      sha256 "1837da651f623e280e794c571962c6d1279b8f17c36e030b52d73d6d6dbc0db5"
     end
   end
 
