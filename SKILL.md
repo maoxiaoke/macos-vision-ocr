@@ -1,97 +1,88 @@
-# Skill: OCR - Extract Text from Images
+---
+name: ocr
+description: Extract text from images using the `ocr` CLI tool (macOS Vision framework). Use this skill whenever the user wants to read text from an image, screenshot, photo, scan, or document image. Also use it when the user shares an image path and asks "what does this say", "extract the text", "OCR this", "read this screenshot", or needs to batch-process images for text extraction. Triggers on any mention of OCR, text recognition, or reading/extracting text from image files (png, jpg, jpeg, webp).
+---
 
-Use the `ocr` command-line tool to extract text from images on macOS. It uses Apple's Vision framework with automatic language detection.
+# OCR - Extract Text from Images
+
+`ocr` is a macOS command-line tool that extracts text from images using Apple's Vision framework. It auto-detects languages (including CJK) and outputs plain text by default.
 
 ## Prerequisites
 
-Install via Homebrew:
+The tool must be installed. If `ocr` is not found, install it:
 
 ```bash
 brew install maoxiaoke/tap/ocr
 ```
 
-## When to Use
+## Core Usage
 
-- User asks to extract/read/recognize text from an image
-- User shares a screenshot and wants the text content
-- User needs to batch process images for text extraction
-- User needs OCR with position/coordinate data
-
-## Usage
-
-### Extract text (default: plain text output)
+### Plain text output (default)
 
 ```bash
-ocr image.png
+ocr <image-path>
 ```
+
+This is the most common case. Just pass the image path and get text back.
 
 ### Multiple images
 
 ```bash
-ocr a.png b.png c.png
+ocr image1.png image2.jpg image3.webp
 ```
 
-### JSON output with positions and confidence scores
+### JSON output with position data
+
+Use `--json` when the user needs bounding box coordinates, confidence scores, or structured data for programmatic use:
 
 ```bash
-ocr --json image.png
+ocr --json <image-path>
 ```
 
-### Specify recognition languages
+### Pipe-friendly
 
-Languages are auto-detected on macOS 13+. Override manually if needed:
+The plain text output works naturally with pipes:
 
 ```bash
-ocr --rec-langs "zh-Hans, en-US" image.png
+ocr screenshot.png | pbcopy          # Copy to clipboard
+ocr receipt.jpg | grep "Total"       # Search in results
+ocr document.png >> notes.txt        # Append to file
 ```
 
-### Batch processing
+## When to Use Each Flag
 
-```bash
-ocr --img-dir ./images --output-dir ./output
-ocr --img-dir ./images --output-dir ./output --merge
-```
+| Scenario | Command |
+|----------|---------|
+| User just wants the text | `ocr image.png` |
+| User needs coordinates/positions | `ocr --json image.png` |
+| User wants results saved to files | `ocr image.png --output ./results` |
+| User has a folder of images | `ocr --img-dir ./images --output-dir ./output` |
+| User wants one merged text file from many images | `ocr --img-dir ./images --output-dir ./output --merge` |
+| User wants to see where text was detected visually | `ocr --debug image.png` |
+| Non-Latin text is garbled (rare, auto-detection usually works) | `ocr --rec-langs "zh-Hans, ja-JP" image.png` |
 
-### Save to file
+## Language Detection
 
-```bash
-ocr image.png --output ./results          # saves .txt
-ocr --json image.png --output ./results   # saves .json
-```
-
-### Debug mode (visualize detected text regions)
-
-```bash
-ocr --debug image.png
-```
-
-## Examples
-
-```bash
-# Read text from a screenshot
-ocr ~/Desktop/screenshot.png
-
-# Get JSON with bounding boxes for programmatic use
-ocr --json photo.jpg
-
-# Process all images in a folder, merge into one text file
-ocr --img-dir ./scans --output-dir ./output --merge
-
-# OCR a Chinese document
-ocr --rec-langs "zh-Hans" document.png
-```
+Languages are auto-detected on macOS 13+. Manual specification via `--rec-langs` is only needed if auto-detection produces poor results (uncommon). Supported: English, French, Italian, German, Spanish, Portuguese, Chinese (Simplified/Traditional), Cantonese, Korean, Japanese, Russian, Ukrainian, Thai, Vietnamese.
 
 ## Supported Formats
 
-JPG, JPEG, PNG, WEBP
+JPG, JPEG, PNG, WEBP.
 
-## Supported Languages
+## Example Workflows
 
-English, French, Italian, German, Spanish, Portuguese, Simplified Chinese, Traditional Chinese, Cantonese, Korean, Japanese, Russian, Ukrainian, Thai, Vietnamese.
+**User shares a screenshot and asks what it says:**
+```bash
+ocr /path/to/screenshot.png
+```
 
-## Tips
+**User wants to digitize a folder of scanned documents:**
+```bash
+ocr --img-dir ./scans --output-dir ./text-output --merge
+```
 
-- Default output is plain text — pipe it directly: `ocr image.png | pbcopy`
-- Use `--json` when you need coordinates or confidence scores
-- On macOS 13+, language is auto-detected — no need to specify `--rec-langs` in most cases
-- Use `--debug` to generate a visual overlay image showing where text was detected
+**User needs OCR data for a script or application:**
+```bash
+ocr --json photo.jpg
+```
+Returns JSON with `texts`, `info` (dimensions, path), and `observations` (per-line text, confidence, quad coordinates normalized 0-1).
