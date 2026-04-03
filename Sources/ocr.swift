@@ -31,8 +31,8 @@ struct MacOSVisionOCR: ParsableCommand {
     @Flag(name: .long, help: "Debug mode: Draw bounding boxes on the image")
     var debug = false
 
-    @Flag(name: [.short, .long], help: "Output only the recognized text")
-    var text = false
+    @Flag(name: .long, help: "Output as JSON with position data")
+    var json = false
 
     @Flag(name: .long, help: "Show supported recognition languages")
     var lang = false
@@ -143,14 +143,14 @@ struct MacOSVisionOCR: ParsableCommand {
                 try fileManager.createDirectory(atPath: outputDir, withIntermediateDirectories: true, attributes: nil)
             }
             let inputFileName = (imagePath as NSString).lastPathComponent
-            let ext = text ? ".txt" : ".json"
+            let ext = json ? ".json" : ".txt"
             let outputFileName = (inputFileName as NSString).deletingPathExtension + ext
             let outputPath = (outputDir as NSString).appendingPathComponent(outputFileName)
-            let content = text ? result.text : result.json
+            let content = json ? result.json : result.text
             try content.write(toFile: outputPath, atomically: true, encoding: .utf8)
             print("OCR result saved to: \(outputPath)")
         } else {
-            print(text ? result.text : result.json)
+            print(json ? result.json : result.text)
         }
 
         if debug {
@@ -184,9 +184,9 @@ struct MacOSVisionOCR: ParsableCommand {
             let result = try extractText(from: fullImagePath)
 
             if let outputDir = outputDir {
-                let ext = text ? ".txt" : ".json"
+                let ext = json ? ".json" : ".txt"
                 let outputPath = (outputDir as NSString).appendingPathComponent((imagePath as NSString).lastPathComponent + ext)
-                let content = text ? result.text : result.json
+                let content = json ? result.json : result.text
                 try content.write(toFile: outputPath, atomically: true, encoding: .utf8)
             }
 
