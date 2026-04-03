@@ -10,6 +10,9 @@ struct MacOSVisionOCR: ParsableCommand {
         abstract: "Perform OCR on single image or batch of images"
     )
 
+    @Argument(help: "Image file path(s) to process")
+    var inputFiles: [String] = []
+
     @Option(name: .long, help: "Path to a single image file")
     var img: String?
 
@@ -110,12 +113,21 @@ struct MacOSVisionOCR: ParsableCommand {
             return
         }
 
-        if let img = img {
+        // Support positional arguments: ocr image.png or ocr a.png b.png
+        if !inputFiles.isEmpty {
+            if inputFiles.count == 1 {
+                try processSingleImage(inputFiles[0], outputDir: output)
+            } else {
+                for file in inputFiles {
+                    try processSingleImage(file, outputDir: output)
+                }
+            }
+        } else if let img = img {
             try processSingleImage(img, outputDir: output)
         } else if let imgDir = imgDir {
             try processBatchImages(imgDir, outputDir: outputDir)
         } else {
-            throw ValidationError("Either --img or --img-dir must be provided")
+            throw ValidationError("Provide image path(s) or use --img / --img-dir")
         }
     }
 
