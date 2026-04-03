@@ -24,12 +24,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Set up Swift
-        uses: swift-actions/setup-swift@v1
-        with:
-          swift-version: "5.9"
+      - name: Show Swift version
+        run: swift --version
 
       - name: Build for arm64
         if: github.event.inputs.platform == 'arm64' || github.event.inputs.platform == 'all'
