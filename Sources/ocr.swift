@@ -31,10 +31,13 @@ struct MacOSVisionOCR: ParsableCommand {
     @Flag(name: .long, help: "Debug mode: Draw bounding boxes on the image")
     var debug = false
 
+    @Flag(name: [.short, .long], help: "Output only the recognized text")
+    var text = false
+
     @Flag(name: .long, help: "Show supported recognition languages")
     var lang = false
 
-    @Option(name: .long, help: "Recognition languages")
+    @Option(name: .long, help: "Recognition languages (auto-detected if not specified)")
     var recLangs: String?
 
     var revision: Int {
@@ -132,24 +135,26 @@ struct MacOSVisionOCR: ParsableCommand {
     }
 
     private func processSingleImage(_ imagePath: String, outputDir: String?) throws {
-        let jsonResult = try extractText(from: imagePath)
-        
+        let result = try extractText(from: imagePath)
+
         if let outputDir = outputDir {
             let fileManager = FileManager.default
             if !fileManager.fileExists(atPath: outputDir) {
                 try fileManager.createDirectory(atPath: outputDir, withIntermediateDirectories: true, attributes: nil)
             }
             let inputFileName = (imagePath as NSString).lastPathComponent
-            let outputFileName = (inputFileName as NSString).deletingPathExtension + ".json"
+            let ext = text ? ".txt" : ".json"
+            let outputFileName = (inputFileName as NSString).deletingPathExtension + ext
             let outputPath = (outputDir as NSString).appendingPathComponent(outputFileName)
-            try jsonResult.write(toFile: outputPath, atomically: true, encoding: .utf8)
+            let content = text ? result.text : result.json
+            try content.write(toFile: outputPath, atomically: true, encoding: .utf8)
             print("OCR result saved to: \(outputPath)")
         } else {
-            print(jsonResult)
+            print(text ? result.text : result.json)
         }
 
         if debug {
-            try drawDebugImage(imagePath: imagePath, jsonResult: jsonResult)
+            try drawDebugImage(imagePath: imagePath, jsonResult: result.json)
         }
     }
 
@@ -176,23 +181,21 @@ struct MacOSVisionOCR: ParsableCommand {
 
         for imagePath in imageFiles {
             let fullImagePath = (imgDir as NSString).appendingPathComponent(imagePath)
-            let jsonResult = try extractText(from: fullImagePath)
-            
+            let result = try extractText(from: fullImagePath)
+
             if let outputDir = outputDir {
-                let outputPath = (outputDir as NSString).appendingPathComponent((imagePath as NSString).lastPathComponent + ".json")
-                try jsonResult.write(toFile: outputPath, atomically: true, encoding: .utf8)
+                let ext = text ? ".txt" : ".json"
+                let outputPath = (outputDir as NSString).appendingPathComponent((imagePath as NSString).lastPathComponent + ext)
+                let content = text ? result.text : result.json
+                try content.write(toFile: outputPath, atomically: true, encoding: .utf8)
             }
 
             if merge {
-                if let data = jsonResult.data(using: .utf8),
-                   let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let text = json["texts"] as? String {
-                    mergedText += text + "\n\n"
-                }
+                mergedText += result.text + "\n\n"
             }
 
             if debug {
-                try drawDebugImage(imagePath: fullImagePath, jsonResult: jsonResult)
+                try drawDebugImage(imagePath: fullImagePath, jsonResult: result.json)
             }
         }
 
@@ -207,11 +210,11 @@ struct MacOSVisionOCR: ParsableCommand {
         return imageExtensions.contains((filePath as NSString).pathExtension.lowercased())
     }
 
-    private func extractText(from imagePath: String) throws -> String {
+    private func extractText(from imagePath: String) throws -> OCRResult {
         guard let img = NSImage(byReferencingFile: imagePath) else {
             throw OCRError.imageLoadFailed(path: imagePath)
         }
-        
+
         guard let cgImage = img.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             throw OCRError.imageConversionFailed(path: imagePath)
         }
@@ -219,20 +222,23 @@ struct MacOSVisionOCR: ParsableCommand {
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
         request.usesLanguageCorrection = true
-        
-        // Use recLangs if provided, otherwise use supported languages
+
         if let recLangs = recLangs {
+            // Use explicitly specified languages
             let languages = recLangs
                 .components(separatedBy: ",")
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { !$0.isEmpty }
             request.recognitionLanguages = languages
+        } else if #available(macOS 13, *) {
+            // Auto-detect language on macOS 13+
+            request.automaticallyDetectsLanguage = true
         } else {
             request.recognitionLanguages = getSupportedLanguages()
         }
-        
+
         request.revision = revision
-        
+
         request.minimumTextHeight = 0.01
 
         let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
@@ -252,17 +258,17 @@ struct MacOSVisionOCR: ParsableCommand {
         }
 
         let combinedFullText = fullText.joined(separator: "\n")
-        
+
         let fileManager = FileManager.default
         let absolutePath = (fileManager.currentDirectoryPath as NSString).appendingPathComponent(imagePath)
-        
+
         let info: [String: Any] = [
             "filename": (imagePath as NSString).lastPathComponent,
             "filepath": absolutePath,
             "width": cgImage.width,
             "height": cgImage.height
         ]
-        
+
         let result: [String: Any] = [
             "info": info,
             "observations": positionalJson,
@@ -270,7 +276,8 @@ struct MacOSVisionOCR: ParsableCommand {
         ]
 
         let jsonData = try JSONSerialization.data(withJSONObject: result, options: .prettyPrinted)
-        return String(data: jsonData, encoding: .utf8) ?? ""
+        let jsonString = String(data: jsonData, encoding: .utf8) ?? ""
+        return OCRResult(text: combinedFullText, json: jsonString)
     }
 
     private func drawDebugImage(imagePath: String, jsonResult: String) throws {
@@ -330,6 +337,11 @@ struct MacOSVisionOCR: ParsableCommand {
         try pngData.write(to: URL(fileURLWithPath: outputFileName))
         print("Debug image saved to: \(outputFileName)")
     }
+}
+
+struct OCRResult {
+    let text: String
+    let json: String
 }
 
 enum OCRError: Error {
