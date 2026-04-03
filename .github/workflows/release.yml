@@ -25,7 +25,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Set up Swift
         uses: swift-actions/setup-swift@v1
         with:
@@ -35,15 +35,29 @@ jobs:
         if: github.event.inputs.platform == 'arm64' || github.event.inputs.platform == 'all'
         run: |
           swift build -c release --arch arm64
-          mv .build/release/macos-vision-ocr .build/release/macos-vision-ocr-arm64
-          zip -j macos-vision-ocr-arm64-${{ github.event.inputs.version }}.zip .build/release/macos-vision-ocr-arm64
+          mkdir -p dist
+          cp .build/release/ocr dist/ocr-arm64
+          cd dist && zip ocr-macos-arm64-${{ github.event.inputs.version }}.zip ocr-arm64
 
       - name: Build for x86_64
         if: github.event.inputs.platform == 'x86_64' || github.event.inputs.platform == 'all'
         run: |
           swift build -c release --arch x86_64
-          mv .build/release/macos-vision-ocr .build/release/macos-vision-ocr-x86_64
-          zip -j macos-vision-ocr-x86_64-${{ github.event.inputs.version }}.zip .build/release/macos-vision-ocr-x86_64
+          mkdir -p dist
+          cp .build/release/ocr dist/ocr-x86_64
+          cd dist && zip ocr-macos-x86_64-${{ github.event.inputs.version }}.zip ocr-x86_64
+
+      - name: Create Universal Binary
+        if: github.event.inputs.platform == 'all'
+        run: |
+          lipo -create dist/ocr-arm64 dist/ocr-x86_64 -output dist/ocr
+          cd dist && zip ocr-macos-universal-${{ github.event.inputs.version }}.zip ocr
+
+      - name: Generate SHA256 checksums
+        run: |
+          cd dist
+          shasum -a 256 *.zip > checksums.txt
+          cat checksums.txt
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -53,4 +67,5 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            macos-vision-ocr-*-${{ github.event.inputs.version }}.zip
+            dist/ocr-macos-*-${{ github.event.inputs.version }}.zip
+            dist/checksums.txt

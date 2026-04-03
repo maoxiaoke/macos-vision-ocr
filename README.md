@@ -20,6 +20,18 @@ A powerful command-line OCR tool built with Apple's Vision framework, supporting
 
 ## Installation
 
+### Homebrew (Recommended)
+
+```bash
+brew install maoxiaoke/tap/ocr
+```
+
+### Quick Install via curl
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/maoxiaoke/macos-vision-ocr/main/install.sh | bash
+```
+
 ### Build from Source
 
 1. Ensure Xcode and Command Line Tools are installed
@@ -27,7 +39,7 @@ A powerful command-line OCR tool built with Apple's Vision framework, supporting
 2. Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/macos-vision-ocr.git
+git clone https://github.com/maoxiaoke/macos-vision-ocr.git
 cd macos-vision-ocr
 ```
 
@@ -45,6 +57,12 @@ For Intel (x86_64):
 swift build -c release --arch x86_64
 ```
 
+4. The binary is at `.build/release/ocr`. You can copy it to your PATH:
+
+```bash
+cp .build/release/ocr /usr/local/bin/ocr
+```
+
 ## Usage
 
 ### Single Image Processing
@@ -52,13 +70,13 @@ swift build -c release --arch x86_64
 Process a single image and output to console:
 
 ```bash
-./macos-vision-ocr --img ./images/handwriting.webp
+ocr --img ./images/handwriting.webp
 ```
 
 Process with custom output directory:
 
 ```bash
-./macos-vision-ocr --img ./images/handwriting.webp --output ./images
+ocr --img ./images/handwriting.webp --output ./images
 ```
 
 ### Set Recognition Languages
@@ -66,7 +84,7 @@ Process with custom output directory:
 Recognition languages can be specified using the `--rec-langs` option. For example:
 
 ```bash
-./macos-vision-ocr --img ./images/handwriting.webp --rec-langs "zh-Hans, zh-Hant, en-US"
+ocr --img ./images/handwriting.webp --rec-langs "zh-Hans, zh-Hant, en-US"
 ```
 
 ### Batch Processing
@@ -74,13 +92,13 @@ Recognition languages can be specified using the `--rec-langs` option. For examp
 Process multiple images in a directory:
 
 ```bash
-./macos-vision-ocr --img-dir ./images --output-dir ./output
+ocr --img-dir ./images --output-dir ./output
 ```
 
 Merge all results into a single file:
 
 ```bash
-./macos-vision-ocr --img-dir ./images --output-dir ./output --merge
+ocr --img-dir ./images --output-dir ./output --merge
 ```
 
 ### Debug Mode
@@ -88,7 +106,7 @@ Merge all results into a single file:
 Enable debug mode to visualize text detection:
 
 ```bash
-./macos-vision-ocr --img ./images/handwriting.webp --debug
+ocr --img ./images/handwriting.webp --debug
 ```
 
 ![handwriting_boxes.png](./images/handwriting_boxes.png)
@@ -176,7 +194,7 @@ When using `--debug`, the tool will:
 
 ## Node.js Integration Example
 
-Here's an example of how to use `macos-vision-ocr` in a Node.js application:
+Here's an example of how to use `ocr` in a Node.js application:
 
 ```javascript
 const { exec } = require("child_process");
@@ -186,7 +204,7 @@ const execPromise = util.promisify(exec);
 async function performOCR(imagePath, outputDir = null) {
   try {
     // Construct the command
-    let command = `./macos-vision-ocr --img "${imagePath}"`;
+    let command = `ocr --img "${imagePath}"`;
     if (outputDir) {
       command += ` --output "${outputDir}"`;
     }
@@ -219,6 +237,16 @@ async function example() {
 }
 
 example();
+```
+
+## Uninstall
+
+```bash
+# If installed via Homebrew
+brew uninstall ocr
+
+# If installed via curl
+rm /usr/local/bin/ocr
 ```
 
 ## Common Issues

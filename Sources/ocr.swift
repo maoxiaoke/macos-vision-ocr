@@ -6,7 +6,7 @@ import Foundation
 @main
 struct MacOSVisionOCR: ParsableCommand {
     static var configuration = CommandConfiguration(
-        commandName: "macos-vision-ocr",
+        commandName: "ocr",
         abstract: "Perform OCR on single image or batch of images"
     )
 
